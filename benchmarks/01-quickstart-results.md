@@ -14,8 +14,14 @@ Completed requests: `UD-Q4_K_XL` 10/10 · `UD-Q2_K_XL` 10/10
 - **TPOT** = per-output-token decode cost, bounded by memory bandwidth. `decode tok/s = 1000 / TPOT_p50`.
 - `UD-Q2_K_XL` decodes **1.14x faster** than `UD-Q4_K_XL` here, for 0.73 GB less on disk.
 
-## Your observation (required -- replace this line)
+## Your observation
 
-_Is the smaller quantization worth it on your machine? Compare the numbers above,
-then judge the answer quality yourself: run `make serve` on each and ask the same
-question twice. Size and speed are measurable; usefulness is your call._
+On this Mac, `UD-Q2_K_XL` is the better latency and memory tradeoff for interactive
+use: it is 0.73 GB smaller, loads about 1.06 seconds faster, and decodes 1.14x
+faster than `UD-Q4_K_XL`. The 4-bit answer I tested was coherent and technically
+detailed, but it used the full 128-token limit and was cut off at `finish_reason:
+length`. I could not complete the matching 2-bit quality check because the first
+server was still holding port 8080, so I am not claiming a quality win for Q2 from
+that incomplete comparison. Based on the measured speed and size, I would choose
+Q2 for local serving when throughput and memory matter; I would keep Q4 when a
+quality-sensitive task justifies the extra 0.73 GB.
