@@ -13,10 +13,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import platform
 import re
 import shutil
+import ssl
 import subprocess
 import sys
 import tarfile
@@ -24,11 +26,22 @@ import urllib.error
 import urllib.request
 import zipfile
 
+import certifi
+
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "lib"))
 import labkit  # noqa: E402
 
 REPO = "ggml-org/llama.cpp"
 BUILD = labkit.LLAMA_CPP_BUILD
+
+
+def tls_context() -> ssl.SSLContext:
+    """Use bundled public CAs when Python has no configured certificate store."""
+    context = ssl.create_default_context()
+    # Preserve explicitly configured stores (for example a corporate proxy CA).
+    if not (os.environ.get("SSL_CERT_FILE") or os.environ.get("SSL_CERT_DIR")):
+        context.load_verify_locations(cafile=certifi.where())
+    return context
 
 # Accelerator keywords that appear in asset names. "plain" = none of these.
 ALL_ACCEL = ("cuda", "vulkan", "rocm", "hip", "sycl", "openvino", "cann", "musa")
@@ -102,7 +115,7 @@ def list_assets() -> list[str]:
     url = f"https://api.github.com/repos/{REPO}/releases/tags/{BUILD}"
     req = urllib.request.Request(url, headers={"User-Agent": "day20-lab"})
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with urllib.request.urlopen(req, timeout=30, context=tls_context()) as r:
             return [a["name"] for a in json.loads(r.read())["assets"]]
     except (urllib.error.URLError, urllib.error.HTTPError, KeyError, ValueError) as exc:
         print(f"    (GitHub API unavailable: {exc} -- using the built-in name table)")
@@ -170,7 +183,7 @@ def download(asset: str, dest: pathlib.Path) -> pathlib.Path:
     print(f"    {url}")
     req = urllib.request.Request(url, headers={"User-Agent": "day20-lab"})
     try:
-        with urllib.request.urlopen(req, timeout=120) as r, out.open("wb") as f:
+        with urllib.request.urlopen(req, timeout=120, context=tls_context()) as r, out.open("wb") as f:
             total = int(r.headers.get("Content-Length") or 0)
             done = 0
             while chunk := r.read(1 << 16):

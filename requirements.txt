@@ -16,3 +16,4 @@ huggingface_hub>=0.24.0,<2   # model download (labs/00-setup/download-model.py)
 httpx>=0.27.0,<1             # HTTP client for every track that talks to llama-server
 locust>=2.30.0,<3            # load testing (labs/02-serve/load-test.py)
 numpy>=1.26.0,<3             # cosine similarity in the bonus serving-regime demos
+certifi>=2024.7.4            # CA bundle for urllib on Python installs without system CAs
